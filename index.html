@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>S&OP as a Decision Forum — Astha Jain · Operations Design</title>
+<meta name="description" content="How to redesign S&OP from a status meeting to a decision forum. Operating principles from a ~$400M global hardware portfolio across NA, EMEA, and APAC."/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --s0:#f9f9f7;--s1:#fcfcfb;--ink:#0b0b0b;--sec:#52514e;--muted:#898781;
+  --grid:#e1e0d9;--border:rgba(11,11,11,.10);
+  --blue:#6366f1;--orange:#eb6834;--aqua:#1baf7a;--yellow:#eda100;
+  --pink:#e87ba4;--violet:#4a3aa7;
+  --good:#0ca30c;--warn:#fab219;--crit:#d03b3b;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px;background:var(--s0);color:var(--ink);}
+
+/* ── Shared nav ── */
+.snav{position:sticky;top:0;z-index:200;background:rgba(252,252,251,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--grid);padding:0 20px;display:flex;align-items:center;gap:6px;height:48px;}
+.snav-brand{font-size:13px;font-weight:800;color:#0f172a;text-decoration:none;margin-right:16px;white-space:nowrap;}
+.snav-brand span{color:var(--blue);}
+.snav-items{display:flex;align-items:center;gap:2px;flex:1;}
+.snav-link{padding:5px 10px;border-radius:5px;font-size:12px;font-weight:500;color:#475569;text-decoration:none;white-space:nowrap;transition:background .12s,color .12s;}
+.snav-link:hover{background:rgba(99,102,241,.07);color:#0f172a;}
+.sndrop{position:relative;}
+.sndrop-toggle{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:5px;font-size:12px;font-weight:500;color:#475569;cursor:pointer;user-select:none;white-space:nowrap;transition:background .12s,color .12s;}
+.sndrop-toggle:hover,.sndrop:hover .sndrop-toggle{background:rgba(99,102,241,.07);color:#0f172a;}
+.sndrop-toggle svg{width:9px;height:9px;transition:transform .18s;}
+.sndrop:hover .sndrop-toggle svg{transform:rotate(180deg);}
+.sndrop-menu{position:absolute;top:calc(100% + 2px);left:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:5px;min-width:240px;box-shadow:0 12px 40px rgba(0,0,0,.14);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-4px);transition:opacity .15s,transform .15s,visibility .15s;}
+.sndrop:hover .sndrop-menu{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0);}
+.sndrop-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;font-size:11px;font-weight:500;color:#475569;text-decoration:none;transition:background .1s,color .1s;}
+.sndrop-item:hover{background:rgba(99,102,241,.09);color:#0f172a;}
+.sndrop-icon{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.sndrop-lbl{font-weight:600;color:#0f172a;font-size:11px;}
+.sndrop-sub{font-size:10px;color:#94a3b8;margin-top:1px;}
+.sndrop-div{height:1px;background:#e2e8f0;margin:4px 2px;}
+.sndrop-section-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;padding:6px 10px 3px;}
+.snav-right{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.snav-badge{padding:4px 12px;border-radius:5px;font-size:11px;font-weight:600;border:1px solid #e2e8f0;color:#475569;text-decoration:none;transition:border-color .12s,color .12s,background .12s;}
+.snav-badge:hover{background:#eef2ff;border-color:var(--blue);color:var(--blue);}
+
+/* ── Banners ── */
+.conf-banner{background:#f1f5f9;border-bottom:1px solid #e2e8f0;padding:7px 24px;font-size:11px;color:#475569;text-align:center;}
+.conf-banner strong{color:#0f172a;}
+
+/* ── Article layout ── */
+.article-container{max-width:760px;margin:0 auto;padding:40px 24px 80px;}
+.article-tag{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;background:rgba(99,102,241,.12);color:var(--blue);}
+.article-title{font-size:clamp(28px,5vw,40px);font-weight:800;line-height:1.1;letter-spacing:-.02em;color:var(--ink);margin:16px 0;}
+.article-meta{font-size:12px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap;padding-bottom:24px;border-bottom:1px solid var(--grid);}
+.article-meta strong{color:var(--sec);}
+.tldr-box{background:#f0f0fd;border-left:3px solid var(--blue);border-radius:8px;padding:20px 24px;margin:32px 0;}
+.tldr-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);margin-bottom:8px;}
+.tldr-box p{font-size:14px;line-height:1.75;color:var(--sec);}
+.article-body{font-size:15px;line-height:1.8;color:var(--sec);}
+.section-heading{font-size:22px;font-weight:800;color:var(--ink);margin:48px 0 16px;letter-spacing:-.02em;}
+.section-num{color:var(--blue);}
+.pull-quote{font-size:19px;font-weight:700;line-height:1.45;color:var(--ink);border-left:3px solid var(--blue);padding:16px 24px;margin:32px 0;background:#f8f9ff;border-radius:0 8px 8px 0;font-style:italic;}
+.callout-box{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin:24px 0;}
+.callout-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--orange);margin-bottom:8px;}
+.callout-box p{font-size:13.5px;line-height:1.7;color:var(--sec);margin-bottom:0;}
+.callout-box ul{margin:8px 0 0 16px;font-size:13.5px;line-height:1.7;color:var(--sec);}
+.callout-box li{margin-bottom:4px;}
+.framework-steps{display:flex;flex-direction:column;gap:14px;margin:24px 0;}
+.step{display:flex;gap:14px;align-items:flex-start;}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.step-title{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:3px;}
+.step-desc{font-size:13px;color:var(--sec);line-height:1.55;}
+.key-takeaways{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:48px;}
+.key-takeaways-title{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:16px;letter-spacing:-.01em;}
+.takeaway-item{display:flex;gap:12px;margin-bottom:12px;font-size:14px;color:var(--sec);}
+.takeaway-item:last-child{margin-bottom:0;}
+.takeaway-num{font-weight:800;color:var(--blue);min-width:20px;}
+.chart-embed{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:16px;margin:28px 0;}
+.chart-embed .ce-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.chart-embed .ce-sub{font-size:11px;color:var(--muted);margin-bottom:12px;}
+.chart-embed canvas{max-height:220px;}
+p{margin-bottom:16px;}
+ul.body-list{margin:8px 0 16px 20px;}
+ul.body-list li{margin-bottom:8px;font-size:15px;line-height:1.7;color:var(--sec);}
+.article-divider{height:1px;background:var(--grid);margin:40px 0;}
+
+/* ── Footer ── */
+footer{margin-top:32px;padding:16px 24px;border-top:1px solid var(--grid);font-size:11px;color:var(--muted);display:flex;gap:16px;align-items:center;max-width:760px;margin-left:auto;margin-right:auto;}
+footer a{color:var(--blue);text-decoration:none;}
+footer a:hover{text-decoration:underline;}
+
+@media(max-width:640px){
+  .article-container{padding:24px 16px 60px;}
+  .pull-quote{font-size:16px;}
+  .article-meta{gap:10px;}
+  .sndrop-menu{min-width:200px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Portfolio nav ── -->
+<nav class="snav">
+  <a href="https://asthaj12.github.io" class="snav-brand">AJ<span> · Portfolio</span></a>
+  <div class="snav-items">
+    <div class="sndrop">
+      <div class="sndrop-toggle">Work<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3.5l3 3 3-3"/></svg></div>
+      <div class="sndrop-menu">
+        <div class="sndrop-section-label">Dashboards</div>
+        <a class="sndrop-item" href="https://asthaj12.github.io/forecast-governance/">
+          <div class="sndrop-icon" style="background:rgba(99,102,241,.12)">📊</div>
+          <div><div class="sndrop-lbl">Forecast Governance</div><div class="sndrop-sub">Anomaly triage · Bias correction</div></div>
+        </a>
+        <a class="sndrop-item" href="https://asthaj12.github.io/seasonal-planning/">
+          <div class="sndrop-icon" style="background:rgba(245,158,11,.12)">📅</div>
+          <div><div class="sndrop-lbl">Scenario Planning</div><div class="sndrop-sub">Demand scenarios · Commitment staging</div></div>
+        </a>
+        <a class="sndrop-item" href="https://asthaj12.github.io/pricing-demand-response/">
+          <div class="sndrop-icon" style="background:rgba(99,102,241,.12)">💹</div>
+          <div><div class="sndrop-lbl">Pricing &amp; Demand Response</div><div class="sndrop-sub">Elasticity · Lift analysis</div></div>
+        </a>
+        <a class="sndrop-item" href="https://asthaj12.github.io/forecast-accuracy/">
+          <div class="sndrop-icon" style="background:rgba(16,185,129,.12)">🎯</div>
+          <div><div class="sndrop-lbl">Forecast Accuracy</div><div class="sndrop-sub">Bias · sMAPE · Planner adjustments</div></div>
+        </a>
+        <a class="sndrop-item" href="https://asthaj12.github.io/replenishment-risk/">
+          <div class="sndrop-icon" style="background:rgba(244,63,94,.12)">⚡</div>
+          <div><div class="sndrop-lbl">Safety Stock Monitor</div><div class="sndrop-sub">Replenishment risk · Violations</div></div>
+        </a>
+        <a class="sndrop-item" href="https://asthaj12.github.io/shopify-demand-forecasting/">
+          <div class="sndrop-icon" style="background:rgba(20,184,166,.12)">🚚</div>
+          <div><div class="sndrop-lbl">Transportation Forecasting</div><div class="sndrop-sub">SKU velocity · Peak planning</div></div>
+        </a>
+        <a class="sndrop-item" href="https://asthaj12.github.io/logitech-supply-planning/">
+          <div class="sndrop-icon" style="background:rgba(99,102,241,.12)">🏭</div>
+          <div><div class="sndrop-lbl">Logitech Global S&amp;OP</div><div class="sndrop-sub">Gaming E&amp;O · Supply disruption · Decision forum</div></div>
+        </a>
+        <div class="sndrop-div"></div>
+        <div class="sndrop-section-label">Articles</div>
+        <a class="sndrop-item" href="https://asthaj12.github.io/sop-framework/" style="background:rgba(99,102,241,.07);">
+          <div class="sndrop-icon" style="background:rgba(99,102,241,.18)">📄</div>
+          <div><div class="sndrop-lbl">S&amp;OP as a Decision Forum</div><div class="sndrop-sub">Operating design · Decision frameworks</div></div>
+        </a>
+      </div>
+    </div>
+    <a class="snav-link" href="https://asthaj12.github.io#projects">Projects</a>
+    <a class="snav-link" href="https://asthaj12.github.io#skills">Skills</a>
+  </div>
+  <div class="snav-right">
+    <a class="snav-badge" href="https://linkedin.com/in/asthajain12" target="_blank">LinkedIn ↗</a>
+    <a class="snav-badge" href="https://github.com/asthaj12" target="_blank">GitHub ↗</a>
+  </div>
+</nav>
+
+<div class="conf-banner"><strong>Independent portfolio case study.</strong> All data, scenarios, and quantitative outcomes shown here are illustrative. This article does not reproduce any employer's data, systems, or confidential business processes.</div>
+
+<!-- ── Article ── -->
+<div class="article-container">
+
+  <!-- Header -->
+  <div style="margin-top:32px;">
+    <span class="article-tag">Operations Design &nbsp;·&nbsp; S&amp;OP &nbsp;·&nbsp; Program Management</span>
+    <h1 class="article-title">S&amp;OP as a Decision Forum:<br>How to Run a Room That Acts, Not Reports</h1>
+    <div class="article-meta">
+      <span><strong>Author:</strong> Astha Jain</span>
+      <span><strong>Reading time:</strong> ~7 min</span>
+      <span><strong>Context:</strong> Global S&amp;OP, ~$400M hardware portfolio, NA / EMEA / APAC</span>
+    </div>
+  </div>
+
+  <!-- TL;DR -->
+  <div class="tldr-box">
+    <div class="tldr-label">TL;DR</div>
+    <p>Most S&amp;OP meetings report status. The best ones make decisions. The difference is not who is in the room — it is how the agenda is structured, what information is visible simultaneously, and whether the meeting owner has the courage to ban status updates. This paper documents the operating design principles used to run weekly global S&amp;OP across a ~$400M hardware portfolio — achieving 7% revenue growth and $1M E&amp;O reduction while managing a 17% Gaming category demand decline, a global supply disruption, and simultaneous NPI launches across NA, EMEA, and APAC.</p>
+  </div>
+
+  <!-- Article body -->
+  <div class="article-body">
+
+    <!-- ── Section 1 ── -->
+    <h2 class="section-heading"><span class="section-num">01 &nbsp;</span>Why Most S&amp;OP Meetings Fail</h2>
+
+    <p>The default S&amp;OP design is a reporting meeting: each function presents its status, problems are surfaced, and the meeting ends with a list of follow-ups that no one owns. This design is comfortable because it creates the appearance of coordination without the discomfort of decisions. The symptoms are universal: long agendas, slide decks built two weeks in advance, action items from three meetings ago still listed as "in progress," and a persistent feeling that nothing was actually resolved.</p>
+
+    <p>The root cause is structural. Status meetings are organized around functions — Sales presents, then Supply presents, then Finance presents — rather than around decisions. What do we do about the Gaming excess? Who owns it? By when? Those questions live in the white space between functions, and status-report design leaves that white space unaddressed.</p>
+
+    <p>When each function owns a slice of the agenda, no one owns the cross-functional decision. The problem is handed around the room and returned to its original owner as a follow-up action item, where it will arrive at the next meeting unchanged.</p>
+
+    <div class="pull-quote">"A status meeting gives you the comfort of visibility without the discomfort of accountability. You know what's happening. Nothing changes."</div>
+
+    <div class="callout-box">
+      <div class="callout-label">The Tell-Tale Signs of a Status Meeting</div>
+      <p>If your S&amp;OP has more than six agenda items per hour, if any slide was built before the week of the meeting, if the word "update" appears anywhere in the agenda — you are running a status meeting. The agenda structure is the diagnosis. Redesigning the meeting starts with redesigning the agenda.</p>
+    </div>
+
+    <!-- Chart 1 -->
+    <div class="chart-embed">
+      <div class="ce-title">Time Allocation Before vs. After Redesign</div>
+      <div class="ce-sub">Percentage of weekly S&amp;OP time spent on each activity — illustrative estimates</div>
+      <canvas id="chart1"></canvas>
+    </div>
+
+    <p>The chart above tells the story cleanly. Before the redesign, nearly 80% of meeting time was consumed by status reporting — functions presenting to each other with no expectation of a decision. After the redesign, that number collapsed to 12%, and decision-making time expanded from 12% to 68%. The meeting became shorter and more consequential.</p>
+
+    <div class="article-divider"></div>
+
+    <!-- ── Section 2 ── -->
+    <h2 class="section-heading"><span class="section-num">02 &nbsp;</span>The One Rule That Changes Everything</h2>
+
+    <p>The redesign starts with a single enforceable rule: every agenda item must have one fact base, one owner, and one due date. If an item cannot satisfy all three conditions, it does not belong on the agenda. This rule is simple to state and genuinely hard to enforce. The first time you remove an SVP's status update from the agenda because it "doesn't have a decision attached to it," you will understand the organizational courage required.</p>
+
+    <p><strong>What "one fact base" means:</strong> everyone in the room is looking at the same data, built from the same source, cut the same way. No pre-meetings where each function builds their own version of reality. One version, built by planning, reviewed and frozen before the meeting begins.</p>
+
+    <p><strong>What "one owner" means:</strong> the person accountable for the decision or action is named explicitly. Not "Sales and Supply will work together on this" — that construction means no one owns it. A named individual.</p>
+
+    <p><strong>What "one due date" means:</strong> not "ASAP" or "by next week." A specific calendar date within the current business cycle, confirmed by the person who owns the action before they leave the room.</p>
+
+    <p>The hardest cultural shift is the exception-only agenda. Only items that are off-plan or require a cross-functional decision appear on the agenda. SKUs tracking to plan are not discussed. This feels wrong at first — it feels like you are ignoring most of the business. In practice, it means you are only spending time where human judgment and cross-functional authority are actually required.</p>
+
+    <div class="callout-box">
+      <div class="callout-label">The Exception Test</div>
+      <p>Before adding any item to the S&amp;OP agenda, ask: "If every person in this room did nothing about this, would it resolve itself correctly?" If yes — it does not belong on the agenda. If no — it requires a decision, and it belongs on the agenda with a framed decision statement, a fact base, a named owner, and a due date.</p>
+    </div>
+
+    <div class="framework-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Pull all exceptions against plan</div>
+          <div class="step-desc">Run the exception report across all SKUs and regions. Flag anything deviating more than the agreed threshold from plan — demand, supply, inventory, or cost.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Filter to items requiring cross-functional input or authority</div>
+          <div class="step-desc">Remove anything a single function can resolve on their own. If Supply can fix it without Finance or Sales, it goes to the operations queue — not the S&amp;OP agenda.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Assign a fact-base owner for each agenda item</div>
+          <div class="step-desc">One person is responsible for building and presenting the fact base for each item. This is usually planning. No item appears on the agenda without its fact base complete.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">Frame each item as an explicit decision</div>
+          <div class="step-desc">"We need to decide X by Y" is the required format. Not "update on the Gaming inventory situation." Every item enters the room as a decision statement.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div>
+          <div class="step-title">Close each item with an owner, a decision, and a date</div>
+          <div class="step-desc">No item leaves the room without a named decision, a named owner, and a specific due date confirmed in the room. The meeting record captures all three before moving to the next item.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="article-divider"></div>
+
+    <!-- ── Section 3 ── -->
+    <h2 class="section-heading"><span class="section-num">03 &nbsp;</span>The Three Things You Must See Simultaneously</h2>
+
+    <p>In a hardware supply chain, three metrics drive most decisions: launch fill rate (are we positioned correctly for new product launches?), E&amp;O inventory level (how much aging inventory requires commercial action?), and premium expedite cost (how much are we paying for supply chain failures?). These three metrics are almost never visible in the same room at the same time.</p>
+
+    <p>The reason is structural. Fill rate is a Sales and Channel problem. E&amp;O is a Finance and Supply problem. Expedite cost is a Supply and Operations problem. In a siloed S&amp;OP, each function sees one leg of this triangle — and optimizes for it independently, often making the other two legs worse.</p>
+
+    <p>When you connect them, something changes: the causal chain becomes visible. A drop in fill rate predicts a rise in expedite cost, because the team will attempt to recover out-of-stock positions through premium freight. A rise in E&amp;O predicts a need for commercial GTM action — promotions, pull-forwards, strategic pricing — because the inventory is already in the warehouse and supply cuts cannot clear it. An expedite spike is a lagging signal that supply planning missed a demand signal that should have been caught in S&amp;OP weeks earlier.</p>
+
+    <p>Seeing all three simultaneously makes that causal chain undeniable to every function in the room simultaneously.</p>
+
+    <div class="pull-quote">"When you see launch fill, E&amp;O, and expedite cost in the same room at the same time, you stop having functional arguments about whose problem it is. The data makes the cross-functional nature of the problem undeniable."</div>
+
+    <p>The Gaming category validated this in a concrete way. When Gaming demand fell 17% year-over-year, the E&amp;O level rose sharply. The instinct — and the first proposal surfaced in S&amp;OP — was to cut supply commitments. But the shared view showed that supply cuts would not clear the E&amp;O: the inventory was already in the warehouse, already owned. GTM commercial action was the only effective lever. Promotions, channel pull-forwards, and strategic pricing could move the inventory that supply cuts could not touch. Seeing E&amp;O alongside expedite cost and fill rate made that argument immediately and visually clear to every stakeholder who needed to act on it.</p>
+
+    <!-- Chart 2 -->
+    <div class="chart-embed">
+      <div class="ce-title">Three Metrics — One Causal Chain</div>
+      <div class="ce-sub">12-month indexed view. Fill Rate (%), E&amp;O Level ($M), Expedite Cost ($K) — illustrative. Normalized to show directional relationships.</div>
+      <canvas id="chart2"></canvas>
+    </div>
+
+    <div class="article-divider"></div>
+
+    <!-- ── Section 4 ── -->
+    <h2 class="section-heading"><span class="section-num">04 &nbsp;</span>Managing External Stakeholders — ODMs, Regions, and Sales</h2>
+
+    <p>Global S&amp;OP with external partners — ODMs, regional distributors, and channel partners — introduces two additional design challenges that internal-only S&amp;OP literature rarely addresses: data quality and decision authority.</p>
+
+    <p>External partners rarely share your urgency about planning cycles. Their incentives are not perfectly aligned with yours. And their capacity data, when submitted in free-form format, is often "theoretical nameplate" rather than executable capacity — a gap that only becomes visible when a launch misses its fill rate target.</p>
+
+    <p><strong>The ODM data problem:</strong> if an ODM tells you they can produce 50,000 units per week, the question that matters is whether that is theoretical (running three shifts, no downtime, no changeovers) or executable (what they reliably produce given current staffing, tooling, and material availability). Designing your S&amp;OP around theoretical capacity is precisely how you end up with a missed launch.</p>
+
+    <p>The solution is fixed submission templates with explicit field definitions. "Executable capacity" is defined in the template: units producible in the next four weeks given current staffing, tooling, and material availability. Deviations from template format are flagged automatically and escalated to the ODM relationship owner before the meeting — not discovered during it.</p>
+
+    <div class="callout-box">
+      <div class="callout-label">The Template Discipline</div>
+      <p>The moment you allow free-form capacity submissions from external partners, you have made the planner — not the supplier — responsible for interpreting the data. Fixed templates with defined fields transfer the interpretive burden back to the party with the most direct knowledge. If the ODM does not know their own executable capacity well enough to fill in a structured field, that is itself a critical planning signal.</p>
+    </div>
+
+    <p><strong>Regional alignment:</strong> different regions have different information arrival schedules. APAC data arrives twelve hours before NA data in a globally coordinated planning cycle. Build the data consolidation schedule around the latest-arriving region and do not begin the decision discussion with partial data. Running the meeting with incomplete information is worse than delaying by two hours.</p>
+
+    <p><strong>The Sales escalation pattern:</strong> Sales will always have a "critical" customer exception that should jump the decision queue. Design the exception test explicitly for this: "If this customer exception is not resolved in this meeting, what specifically fails — and when?" If the answer is anything other than a specific, quantified consequence within the current business cycle, it goes to the follow-up queue, not the agenda.</p>
+
+    <!-- Chart 3 -->
+    <div class="chart-embed">
+      <div class="ce-title">ODM Submission Compliance Over Time</div>
+      <div class="ce-sub">% of capacity submissions meeting template requirements and deadline — illustrative 16-week ramp. Annotation at week 6 marks introduction of escalation-for-non-compliance.</div>
+      <canvas id="chart3"></canvas>
+    </div>
+
+    <div class="article-divider"></div>
+
+    <!-- ── Section 5 ── -->
+    <h2 class="section-heading"><span class="section-num">05 &nbsp;</span>Measuring Whether It's Working</h2>
+
+    <p>A redesigned S&amp;OP is only better if it produces better outcomes. The natural instinct is to measure meeting quality — did attendees feel heard? did the meeting end on time? These are proxies for comfort, not for performance.</p>
+
+    <p>The outcomes that matter are operational: are decisions made in the meeting rather than outside it? Are action items completed by the agreed date? Are the three connected metrics — fill rate, E&amp;O, expedite cost — trending in the right direction?</p>
+
+    <p>Four metrics reliably measure S&amp;OP effectiveness:</p>
+
+    <ul class="body-list">
+      <li><strong>Decision completion rate:</strong> percentage of agenda items that resulted in a named decision with a named owner. Target above 90%. Below 80% indicates the exception-filter is not working and non-decision items are reaching the agenda.</li>
+      <li><strong>Action item completion rate:</strong> percentage of prior cycle's actions completed by their committed due date. Target above 80%. Chronic underperformance here indicates that due dates are not being taken seriously, which usually means the accountability structure — named owners, confirmed in the room — is not being enforced.</li>
+      <li><strong>Time-to-decision:</strong> average number of weeks from an exception being flagged to a decision being made. Target same-week for critical exceptions, within two weeks for standard. Drift above this signals that items are being carried forward without decisions.</li>
+      <li><strong>Exception recurrence rate:</strong> percentage of exceptions that recur in a subsequent S&amp;OP cycle because the prior decision did not stick or was not implemented. Target below 15%. High recurrence is the single best signal that either the decision quality or the implementation accountability is broken.</li>
+    </ul>
+
+    <div class="callout-box">
+      <div class="callout-label">What Not to Measure</div>
+      <p>Do not measure attendance, slide deck quality, or "alignment" — alignment is usually a proxy for "everyone agreed and nothing was decided." The meeting that everyone leaves feeling good about, without a single named decision, is a perfectly optimized status meeting.</p>
+    </div>
+
+    <p>One structural caution: run the redesigned S&amp;OP for twelve weeks before evaluating its effectiveness. Cultural change in meeting design takes six to eight weeks to stabilize — people need time to internalize the exception-only agenda, to stop preparing status slides, and to arrive with decisions in mind rather than updates. Measuring at week three will typically show worse metrics than the old design, because you are now surfacing decisions that were previously avoided. That is not failure — that is the design working.</p>
+
+    <div class="pull-quote">"The measure of a good S&amp;OP is not whether the meeting felt productive. It is whether decisions were made faster, E&amp;O came down, expedite cost came down, and your launches hit fill rate targets. Those are the only measures that matter."</div>
+
+    <!-- Chart 4 -->
+    <div class="chart-embed">
+      <div class="ce-title">S&amp;OP Effectiveness — Before vs. After Redesign</div>
+      <div class="ce-sub">Four operating metrics compared across matched 12-week windows before and after redesign — illustrative. Time-to-decision shown in days.</div>
+      <canvas id="chart4"></canvas>
+    </div>
+
+    <div class="article-divider"></div>
+
+    <!-- ── Key Takeaways ── -->
+    <div class="key-takeaways">
+      <div class="key-takeaways-title">Key Takeaways</div>
+      <div class="takeaway-item">
+        <span class="takeaway-num">1</span>
+        <span>Most S&amp;OP meetings fail because they report status instead of making decisions. The agenda structure is both the diagnosis and the intervention.</span>
+      </div>
+      <div class="takeaway-item">
+        <span class="takeaway-num">2</span>
+        <span>The one rule that changes everything: every agenda item must have one fact base, one owner, and one due date — without exception.</span>
+      </div>
+      <div class="takeaway-item">
+        <span class="takeaway-num">3</span>
+        <span>Exception-only agenda discipline is the hardest cultural shift and the most important one. If a SKU is on plan, it does not get airtime.</span>
+      </div>
+      <div class="takeaway-item">
+        <span class="takeaway-num">4</span>
+        <span>Seeing launch fill rate, E&amp;O, and expedite cost simultaneously makes cross-functional root causes structurally undeniable — the data does the argument for you.</span>
+      </div>
+      <div class="takeaway-item">
+        <span class="takeaway-num">5</span>
+        <span>External partner data quality requires template discipline. Free-form capacity submissions transfer interpretive burden to the wrong party.</span>
+      </div>
+      <div class="takeaway-item">
+        <span class="takeaway-num">6</span>
+        <span>Measure outcomes, not meeting quality: decision completion rate, action item close rate, time-to-decision, and exception recurrence rate are the only metrics worth tracking.</span>
+      </div>
+    </div>
+
+  </div><!-- /article-body -->
+</div><!-- /article-container -->
+
+<footer>
+  <span>Astha Jain · Portfolio</span>
+  <a href="https://asthaj12.github.io">Home</a>
+  <a href="https://linkedin.com/in/asthajain12" target="_blank">LinkedIn ↗</a>
+  <span style="margin-left:auto">Independent portfolio case study · Illustrative data only</span>
+</footer>
+
+<script>
+Chart.defaults.font.family = 'system-ui,-apple-system,"Segoe UI",sans-serif';
+Chart.defaults.color = '#898781';
+
+const BLUE   = '#6366f1';
+const ORANGE = '#eb6834';
+const AQUA   = '#1baf7a';
+const YELLOW = '#eda100';
+const GRAY   = '#c8c5be';
+const BLUE_T = 'rgba(99,102,241,.15)';
+
+/* ── Chart 1: Time Allocation Grouped Bar ── */
+(function(){
+  const ctx = document.getElementById('chart1').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Status Reporting', 'Decision-Making', 'Action Follow-Up'],
+      datasets: [
+        {
+          label: 'Before Redesign',
+          data: [78, 12, 10],
+          backgroundColor: GRAY,
+          borderRadius: 4,
+          borderSkipped: false,
+        },
+        {
+          label: 'After Redesign',
+          data: [12, 68, 20],
+          backgroundColor: BLUE,
+          borderRadius: 4,
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, padding: 16, font: { size: 11 } } },
+        tooltip: {
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: {
+          max: 100,
+          ticks: { callback: v => v + '%', font: { size: 11 } },
+          grid: { color: '#e1e0d9' }
+        }
+      }
+    }
+  });
+})();
+
+/* ── Chart 2: Three Metrics Line Chart ── */
+(function(){
+  const ctx = document.getElementById('chart2').getContext('2d');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Gaming decline starts Apr, bottoms Jun, recovers
+  const fillRate  = [96, 95, 93, 89, 84, 79, 82, 86, 89, 92, 94, 95]; // % — falling with Gaming decline
+  const eoLevel   = [7,  8,  10, 14, 19, 24, 21, 17, 13, 10, 8,  7 ]; // $M — rises as demand falls
+  const expedite  = [11, 12, 15, 21, 29, 36, 30, 23, 17, 13, 11, 10]; // $K — spikes when fill stressed
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Launch Fill Rate (%)',
+          data: fillRate,
+          borderColor: AQUA,
+          backgroundColor: 'rgba(27,175,122,.08)',
+          borderWidth: 2.5,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          yAxisID: 'y',
+        },
+        {
+          label: 'E&O Level ($M)',
+          data: eoLevel,
+          borderColor: ORANGE,
+          backgroundColor: 'rgba(235,104,52,.08)',
+          borderWidth: 2.5,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          yAxisID: 'y1',
+          borderDash: [5,3],
+        },
+        {
+          label: 'Expedite Cost ($K)',
+          data: expedite,
+          borderColor: BLUE,
+          backgroundColor: BLUE_T,
+          borderWidth: 2.5,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          yAxisID: 'y1',
+          borderDash: [2,2],
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, padding: 14, font: { size: 11 } } },
+        annotation: {}
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: {
+          type: 'linear',
+          position: 'left',
+          min: 70,
+          max: 100,
+          ticks: { callback: v => v + '%', font: { size: 11 } },
+          grid: { color: '#e1e0d9' },
+          title: { display: true, text: 'Fill Rate (%)', font: { size: 10 }, color: AQUA }
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          min: 0,
+          max: 50,
+          ticks: { font: { size: 11 } },
+          grid: { drawOnChartArea: false },
+          title: { display: true, text: 'E&O ($M) / Expedite ($K)', font: { size: 10 }, color: ORANGE }
+        }
+      }
+    }
+  });
+})();
+
+/* ── Chart 3: ODM Compliance Line Chart ── */
+(function(){
+  const ctx = document.getElementById('chart3').getContext('2d');
+  const weeks = Array.from({length:16}, (_,i) => 'Wk '+(i+1));
+  // Starts inconsistent, escalation rule kicks in at wk 6, compliance climbs
+  const compliance = [58, 62, 55, 60, 63, 71, 76, 80, 84, 87, 89, 91, 92, 93, 94, 94];
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: weeks,
+      datasets: [{
+        label: 'Submission Compliance (%)',
+        data: compliance,
+        borderColor: BLUE,
+        backgroundColor: BLUE_T,
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.35,
+        pointRadius: (ctx) => ctx.dataIndex === 5 ? 6 : 3,
+        pointBackgroundColor: (ctx) => ctx.dataIndex === 5 ? ORANGE : BLUE,
+        pointHoverRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `Compliance: ${ctx.parsed.y}%`,
+            afterLabel: ctx => ctx.dataIndex === 5 ? ' ← Escalation rule introduced' : ''
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: {
+          min: 40,
+          max: 100,
+          ticks: { callback: v => v + '%', font: { size: 11 } },
+          grid: { color: '#e1e0d9' }
+        }
+      }
+    },
+    plugins: [{
+      id: 'annotation-wk6',
+      afterDraw(chart) {
+        const { ctx: c, scales: { x, y } } = chart;
+        const xPos = x.getPixelForIndex(5);
+        const yPos = y.getPixelForValue(71);
+        c.save();
+        c.beginPath();
+        c.moveTo(xPos, chart.chartArea.top);
+        c.lineTo(xPos, chart.chartArea.bottom);
+        c.strokeStyle = 'rgba(235,104,52,.35)';
+        c.lineWidth = 1.5;
+        c.setLineDash([4,3]);
+        c.stroke();
+        c.setLineDash([]);
+        c.fillStyle = ORANGE;
+        c.font = '9px system-ui';
+        c.textAlign = 'center';
+        c.fillText('Escalation rule', xPos, chart.chartArea.top + 10);
+        c.fillText('introduced (Wk 6)', xPos, chart.chartArea.top + 22);
+        c.restore();
+      }
+    }]
+  });
+})();
+
+/* ── Chart 4: Effectiveness Grouped Bar ── */
+(function(){
+  const ctx = document.getElementById('chart4').getContext('2d');
+  // decision completion %, action completion %, time-to-decision (days), exception recurrence %
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Decision\nCompletion', 'Action\nCompletion', 'Time-to-Decision\n(days)', 'Exception\nRecurrence'],
+      datasets: [
+        {
+          label: 'Before Redesign',
+          data: [52, 44, 18, 38],
+          backgroundColor: GRAY,
+          borderRadius: 4,
+          borderSkipped: false,
+        },
+        {
+          label: 'After Redesign',
+          data: [94, 88, 4, 11],
+          backgroundColor: BLUE,
+          borderRadius: 4,
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, padding: 16, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const label = ctx.dataset.label;
+              const val = ctx.parsed.y;
+              const idx = ctx.dataIndex;
+              const unit = idx === 2 ? ' days' : '%';
+              // For time-to-decision, lower is better; invert the direction signal
+              return `${label}: ${val}${unit}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { size: 10 },
+            callback: function(val, idx) {
+              const labels = ['Decision\nCompletion', 'Action\nCompletion', 'Time-to-Decision\n(days)', 'Exception\nRecurrence'];
+              return labels[idx].split('\n');
+            }
+          }
+        },
+        y: {
+          max: 100,
+          ticks: { font: { size: 11 } },
+          grid: { color: '#e1e0d9' }
+        }
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>
