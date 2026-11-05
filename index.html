@@ -205,7 +205,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&dd.open){dd
   <!-- TL;DR -->
   <div class="tldr-box">
     <div class="tldr-label">TL;DR</div>
-    <p>Most S&amp;OP meetings report status. The best ones make decisions. The difference is not who is in the room — it is how the agenda is structured, what information is visible simultaneously, and whether the meeting owner has the courage to ban status updates. This paper documents the operating design principles used to run weekly global S&amp;OP across a ~$400M hardware portfolio — achieving 7% revenue growth and $1M E&amp;O reduction while managing a 17% Gaming category demand decline, a global supply disruption, and simultaneous NPI launches across NA, EMEA, and APAC.</p>
+    <p>Most S&amp;OP meetings report status. The best ones make decisions. The difference is not who is in the room — it is how the agenda is structured, what information is visible simultaneously, and whether the meeting owner has the courage to ban status updates. This paper documents the operating design principles used to run weekly global S&amp;OP across a ~$400M hardware portfolio — achieving 7% revenue growth and $1M E&amp;O reduction while managing a 17% key-category demand decline, a global supply disruption, and simultaneous NPI launches across NA, EMEA, and APAC.</p>
   </div>
 
   <!-- Article body -->
@@ -216,7 +216,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&dd.open){dd
 
     <p>The default S&amp;OP design is a reporting meeting: each function presents its status, problems are surfaced, and the meeting ends with a list of follow-ups that no one owns. This design is comfortable because it creates the appearance of coordination without the discomfort of decisions. The symptoms are universal: long agendas, slide decks built two weeks in advance, action items from three meetings ago still listed as "in progress," and a persistent feeling that nothing was actually resolved.</p>
 
-    <p>The root cause is structural. Status meetings are organized around functions — Sales presents, then Supply presents, then Finance presents — rather than around decisions. What do we do about the Gaming excess? Who owns it? By when? Those questions live in the white space between functions, and status-report design leaves that white space unaddressed.</p>
+    <p>The root cause is structural. Status meetings are organized around functions — Sales presents, then Supply presents, then Finance presents — rather than around decisions. What do we do about the key-category excess? Who owns it? By when? Those questions live in the white space between functions, and status-report design leaves that white space unaddressed.</p>
 
     <p>When each function owns a slice of the agenda, no one owns the cross-functional decision. The problem is handed around the room and returned to its original owner as a follow-up action item, where it will arrive at the next meeting unchanged.</p>
 
@@ -282,7 +282,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&dd.open){dd
         <div class="step-num">4</div>
         <div>
           <div class="step-title">Frame each item as an explicit decision</div>
-          <div class="step-desc">"We need to decide X by Y" is the required format. Not "update on the Gaming inventory situation." Every item enters the room as a decision statement.</div>
+          <div class="step-desc">"We need to decide X by Y" is the required format. Not "update on the key-category inventory situation." Every item enters the room as a decision statement.</div>
         </div>
       </div>
       <div class="step">
@@ -309,7 +309,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&dd.open){dd
 
     <div class="pull-quote">"When you see launch fill, E&amp;O, and expedite cost in the same room at the same time, you stop having functional arguments about whose problem it is. The data makes the cross-functional nature of the problem undeniable."</div>
 
-    <p>The Gaming category validated this in a concrete way. When Gaming demand fell 17% year-over-year, the E&amp;O level rose sharply. The instinct — and the first proposal surfaced in S&amp;OP — was to cut supply commitments. But the shared view showed that supply cuts would not clear the E&amp;O: the inventory was already in the warehouse, already owned. GTM commercial action was the only effective lever. Promotions, channel pull-forwards, and strategic pricing could move the inventory that supply cuts could not touch. Seeing E&amp;O alongside expedite cost and fill rate made that argument immediately and visually clear to every stakeholder who needed to act on it.</p>
+    <p>A key category validated this in a concrete way. When the key category's demand fell 17% year-over-year, the E&amp;O level rose sharply. The instinct — and the first proposal surfaced in S&amp;OP — was to cut supply commitments. But the shared view showed that supply cuts would not clear the E&amp;O: the inventory was already in the warehouse, already owned. GTM commercial action was the only effective lever. Promotions, channel pull-forwards, and strategic pricing could move the inventory that supply cuts could not touch. Seeing E&amp;O alongside expedite cost and fill rate made that argument immediately and visually clear to every stakeholder who needed to act on it.</p>
 
     <!-- Chart 2 -->
     <div class="chart-embed">
@@ -483,8 +483,8 @@ const BLUE_T = 'rgba(99,102,241,.15)';
 (function(){
   const ctx = document.getElementById('chart2').getContext('2d');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  // Gaming decline starts Apr, bottoms Jun, recovers
-  const fillRate  = [96, 95, 93, 89, 84, 79, 82, 86, 89, 92, 94, 95]; // % — falling with Gaming decline
+  // Key-category decline starts Apr, bottoms Jun, recovers
+  const fillRate  = [96, 95, 93, 89, 84, 79, 82, 86, 89, 92, 94, 95]; // % — falling with key-category decline
   const eoLevel   = [7,  8,  10, 14, 19, 24, 21, 17, 13, 10, 8,  7 ]; // $M — rises as demand falls
   const expedite  = [11, 12, 15, 21, 29, 36, 30, 23, 17, 13, 11, 10]; // $K — spikes when fill stressed
   new Chart(ctx, {
